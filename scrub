@@ -1,0 +1,13 @@
+#!/bin/sh
+
+bundle install
+if [ $# -eq 0 ];
+then
+	echo "$0: Must provide 2 arguments: sensitive_fields.txt and input.json"
+  exit 1
+fi
+echo "Scrubbing $2"
+ruby ./scrub.rb $1 $2
+
+echo "Scrubbing manually $2"
+ruby ./scrub_manual.rb $1 $2

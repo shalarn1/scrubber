@@ -1,0 +1,9 @@
+Please find the repo at https://github.com/shalarn1/scrubber
+Run the script with ./scrub tests/[test_name]/sensitive_fields.txt tests/[test_name]/input.json
+
+The script generates a scrubbed JSON version of input.json with the keys in sensitive_fields.txt "scrubbed". If the generated results match the provided test results the scrubbed output is saved in /generated_output. Otherwise the result is printed.
+
+My first pass I used Ruby's gsub and that solution can be found in scrub.rb
+However, I wasn't sure if using Ruby's gsub was an acceptable approach to replacing the characters so I also wrote my own string replacement version in case that was an important part of the challenge. You can find that in scrub_manual.rb and the corresponding results in /generated_output/manual
+
+7/9 tests were passing in my initial take. The output for tests 07 and 09 were only partially scrubbed and I was a bit curious about them so I spent another 30 minutes or so getting them to pass as well.
