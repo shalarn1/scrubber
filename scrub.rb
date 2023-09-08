@@ -1,30 +1,46 @@
 require 'json'
+
 sensitive_fields_arg = ARGV[0]
 input_arg = ARGV[1]
 
-test_name = input_arg.split("/")[-2]
 SENSITIVE_FIELDS = File.read(sensitive_fields_arg).split
+test_name = input_arg.split("/")[-2]
 input = JSON.parse(File.read(input_arg))
 
-def scrub(field, parent_key: nil)
-	case field
-	when String, Numeric
-		field.to_s.gsub(/[[:alnum:]]/, "*")
-	when TrueClass, FalseClass
-		"-"
+# This method must initially be called with a valid json
+def scrub(data, parent_key:)
+	case data
+	when String, Numeric, TrueClass, FalseClass
+		# scrub basic data types if its nested under a sensitive parent key
+		if parent_key && SENSITIVE_FIELDS.include?(parent_key)
+			if data.is_a?(TrueClass) || data.is_a?(FalseClass)
+				"-"
+			else
+				data.to_s.gsub(/[[:alnum:]]/, "*")
+			end
+		else
+			data
+		end
 	when Array
-		field.map { |f| scrub(f) }
+		data.map { |f| scrub(f, parent_key: parent_key) }
 	when Hash
-		field.keys.each do |k|
-			if (parent_key && SENSITIVE_FIELDS.include?(parent_key)) || SENSITIVE_FIELDS.include?(k) || field[k].is_a?(Hash)
-				field[k] = scrub(field[k], parent_key: k)
+		data.keys.each do |k|
+			# Scrub the data if 
+			# 1) Its a nested data type
+			# 2) Its parent is a sensitive key
+			# 3) Its parent is not a sensitive key but the current key itself is sensitive
+			if data[k].is_a?(Hash) || data[k].is_a?(Array) || (parent_key && SENSITIVE_FIELDS.include?(parent_key)) || SENSITIVE_FIELDS.include?(k)
+				key = (parent_key && SENSITIVE_FIELDS.include?(parent_key)) ? parent_key : k
+				data[k] = scrub(data[k], parent_key: key)
 			end
 		end
-		field
+		data
+	when nil
+		data
 	end
 end
 
-scrub(input)
+scrub(input, parent_key: nil)
 
 expected_output = JSON.parse(File.read("./tests/#{test_name}/output.json"))
 if expected_output == input
@@ -34,5 +50,3 @@ else
 	p "Scrub Incompleted (#{test_name})"
 	p input
 end
-
-
